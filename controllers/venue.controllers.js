@@ -19,7 +19,7 @@ export const getVenues = catchAsyncErrors(async (req, res) => {
 
 // Create new venue --ADMIN  =>  /api/venues
 export const newVenue = catchAsyncErrors(async (req, res) => {
-  req.body.user = req.user._id;
+  req.body.createdBy = req.user._id;
 
   const venue = await Venue.create(req.body);
 
@@ -66,7 +66,7 @@ export const deleteVenue = catchAsyncErrors(async (req, res, next) => {
     throw next(new ErrorHandler("Venue not found", 404));
   }
 
-  await venue.deleteOne(); // Delete the specific venue document
+  await venue.deleteOne(); 
 
   res.status(200).json({
     message: "Venue Deleted",

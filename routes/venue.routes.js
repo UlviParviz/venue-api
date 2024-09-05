@@ -7,12 +7,16 @@ import {
   updateVenue,
 } from "../controllers/venue.controllers.js";
 import { authorizeRoles, isAuthenticatedUser } from "../middlewares/auth.js";
+import {
+  checkVenueValidation,
+  validateVenue,
+} from "../validations/venue.validation.js";
 const router = express.Router();
 
 router.route("/venues").get(getVenues);
 router
   .route("/venues")
-  .post(isAuthenticatedUser, newVenue);
+  .post(isAuthenticatedUser, validateVenue, checkVenueValidation, newVenue);
 router.route("/venues/:id").get(getSingleVenue);
 router
   .route("/venues/:id")

@@ -25,9 +25,11 @@ app.use(cookieParser());
 // Import all routes
 import venueRoutes from "./routes/venue.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import reservationRoutes from "./routes/reservation.routes.js";
 
 app.use("/api", venueRoutes);
 app.use("/api", authRoutes);
+app.use("/api", reservationRoutes);
 
 // Using error middleware
 app.use(errorMiddleware);

@@ -1,46 +1,37 @@
 import mongoose from "mongoose";
-import Joi from "joi";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import joigoose from "joigoose";
 
-// Initialize Joigoose
-const convertedJoigoose = joigoose(mongoose, { convert: false });
-
-// Define the Joi schema
-const joiUserSchema = Joi.object({
-  username: Joi.string().max(50).required().messages({
-    "string.base": "Username should be a type of string",
-    "string.max": "Username cannot exceed 50 characters",
-    "any.required": "Please enter your username",
-  }),
-  email: Joi.string().email().required().messages({
-    "string.base": "Email should be a type of string",
-    "string.email": "Please enter a valid email address",
-    "any.required": "Please enter your email",
-  }),
-  password: Joi.string().min(6).required().messages({
-    "string.base": "Password should be a type of string",
-    "string.min": "Password must be longer than 6 characters",
-    "any.required": "Please enter your password",
-  }),
-  role: Joi.string().valid("user", "admin").default("user").messages({
-    "string.base": "Role should be a type of string",
-    "string.valid": "Role must be either 'user' or 'admin'",
-  }),
-});
-
-// Convert the Joi schema to Mongoose schema
-const mongooseSchemaDefinition = convertedJoigoose.convert(joiUserSchema);
-
-// Add additional fields that are not covered by Joi validation
-mongooseSchemaDefinition.password.select = false; // Exclude password field by default
-
-const { Schema } = mongoose;
-
-const userSchema = new Schema(mongooseSchemaDefinition, {
-  timestamps: true,
-});
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: [true, "Please enter your username"],
+      maxlength: [50, "Username cannot exceed 50 characters"],
+    },
+    email: {
+      type: String,
+      required: [true, "Please enter your email"],
+      unique: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email address",
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, "Please enter your password"],
+      minlength: [8, "Password must be longer than 6 characters"],
+      select: false, 
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+  },
+  { timestamps: true }
+);
 
 // Encrypt password before saving the user
 userSchema.pre("save", async function (next) {
