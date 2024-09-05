@@ -2,6 +2,8 @@ import Reservation from "../models/reservation.model.js";
 import Venue from "../models/venue.model.js";
 import catchAsyncErrors from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../utils/errorHandler.js";
+import { getCreateReservationTemplate } from "../utils/emailTemplate.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // Create a new reservation =>  /api/reservations  POST
 export const createReservation = catchAsyncErrors(async (req, res, next) => {
@@ -29,6 +31,8 @@ export const createReservation = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
+  const message = getCreateReservationTemplate(req.user.username);
+
   const newReservation = new Reservation({
     userId,
     venueId,
@@ -38,6 +42,14 @@ export const createReservation = catchAsyncErrors(async (req, res, next) => {
   });
 
   await newReservation.save();
+
+  // Send email notification
+  await sendEmail({
+    email: req?.user?.email,
+    subject: "Reservation Confirmation",
+    message,
+  });
+
   res.status(201).json(newReservation);
 });
 

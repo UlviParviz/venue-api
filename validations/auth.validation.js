@@ -19,8 +19,8 @@ export const validateUser = [
     .isString()
     .withMessage("Password should be a type of string")
     .isLength({ min: 8 })
-    .withMessage("Password must be longer than 8 characters")
-    .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]$/)
+    .withMessage("Password must be at least 8 characters long")
+    .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/)
     .withMessage("Password must contain at least one letter and one number")
     .notEmpty()
     .withMessage("Please enter your password"),
