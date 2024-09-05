@@ -4,11 +4,11 @@ import catchAsyncErrors from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { getCreateReservationTemplate } from "../utils/emailTemplate.js";
 import sendEmail from "../utils/sendEmail.js";
+import redisClient from "../utils/redisClient.js";
 
 // Create a new reservation =>  /api/reservations  POST
 export const createReservation = catchAsyncErrors(async (req, res, next) => {
   const { venueId, date, time, numberOfPeople } = req.body;
-
   const userId = req.user._id;
 
   // Check if the venueId exists in the Venue model
@@ -50,18 +50,36 @@ export const createReservation = catchAsyncErrors(async (req, res, next) => {
     message,
   });
 
+  // Clear relevant cache
+  redisClient.del(`reservations:${userId}`, (err) => {
+    if (err) console.error("Cache clear error: ", err);
+  });
+
   res.status(201).json(newReservation);
 });
 
 // Get all reservations for a specific user =>  /api/reservations GET
 export const getUserReservations = catchAsyncErrors(async (req, res, next) => {
-  const reservations = await Reservation.find({ userId: req.user._id });
+  const userId = req.user._id;
+  const cacheKey = `reservations:${userId}`;
 
-  if (!reservations) {
-    return next(new ErrorHandler("No reservations found for this user", 404));
-  }
+  redisClient.get(cacheKey, async (err, cachedData) => {
+    if (err) return res.status(500).json({ message: "Cache error" });
 
-  res.status(200).json(reservations);
+    if (cachedData) {
+      return res.status(200).json(JSON.parse(cachedData));
+    }
+
+    const reservations = await Reservation.find({ userId });
+
+    if (!reservations) {
+      return next(new ErrorHandler("No reservations found for this user", 404));
+    }
+
+    redisClient.setEx(cacheKey, 3600, JSON.stringify(reservations));
+
+    res.status(200).json(reservations);
+  });
 });
 
 // Get a reservation details by ID =>  /api/reservations/:id GET
@@ -75,7 +93,7 @@ export const getReservationById = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Reservation not found", 404));
   } else if (
     reservation.userId._id.toString() !== req.user._id.toString() &&
-    !req.user.role === "admin"
+    req.user.role !== "admin"
   ) {
     return next(new ErrorHandler("Access denied", 403));
   }
@@ -94,11 +112,17 @@ export const cancelReservation = catchAsyncErrors(async (req, res, next) => {
 
   if (
     reservation.userId._id.toString() !== req.user._id.toString() &&
-    !req.user.role === "admin"
+    req.user.role !== "admin"
   ) {
     return next(new ErrorHandler("Access denied", 403));
   }
 
   await reservation.deleteOne();
+
+  // Clear relevant cache
+  redisClient.del(`reservations:${req.user._id}`, (err) => {
+    if (err) console.error("Cache clear error: ", err);
+  });
+
   res.status(200).json({ message: "Reservation cancelled successfully" });
 });

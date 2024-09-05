@@ -2,18 +2,31 @@ import catchAsyncErrors from "../middlewares/catchAsyncErrors.js";
 import APIFilters from "../utils/filters.js";
 import Venue from "../models/venue.model.js";
 import ErrorHandler from "../utils/errorHandler.js";
+import redisClient from "../utils/redisClient.js";
 
 // Get Venues   =>  /api/venues
 export const getVenues = catchAsyncErrors(async (req, res) => {
-  const apiFilters = new APIFilters(Venue, req.query).search().filters();
+  const cacheKey = "venues";
+  redisClient.get(cacheKey, async (err, cachedData) => {
+    if (err) return res.status(500).json({ message: "Cache error" });
 
-  let venues = await apiFilters.query;
+    if (cachedData) {
+      return res.status(200).json(JSON.parse(cachedData));
+    }
 
-  apiFilters.pagination();
-  venues = await apiFilters.query.clone();
+    const apiFilters = new APIFilters(Venue, req.query).search().filters();
+    let venues = await apiFilters.query;
 
-  res.status(200).json({
-    venues,
+    apiFilters.pagination();
+    venues = await apiFilters.query.clone();
+
+    const response = {
+      venues,
+    };
+
+    redisClient.setEx(cacheKey, 3600, JSON.stringify(response));
+
+    res.status(200).json(response);
   });
 });
 
@@ -22,6 +35,11 @@ export const newVenue = catchAsyncErrors(async (req, res) => {
   req.body.createdBy = req.user._id;
 
   const venue = await Venue.create(req.body);
+
+  // Clear the cache
+  redisClient.del("venues", (err) => {
+    if (err) console.error("Cache clear error: ", err);
+  });
 
   res.status(200).json({
     venue,
@@ -42,7 +60,7 @@ export const getSingleVenue = catchAsyncErrors(async (req, res, next) => {
 });
 
 // Update venue --ADMIN    =>  /api/v1/venues/:id
-export const updateVenue = catchAsyncErrors(async (req, res) => {
+export const updateVenue = catchAsyncErrors(async (req, res, next) => {
   let venue = await Venue.findById(req?.params?.id);
 
   if (!venue) {
@@ -51,6 +69,11 @@ export const updateVenue = catchAsyncErrors(async (req, res) => {
 
   venue = await Venue.findByIdAndUpdate(req?.params?.id, req.body, {
     new: true,
+  });
+
+  // Clear the cache
+  redisClient.del("venues", (err) => {
+    if (err) console.error("Cache clear error: ", err);
   });
 
   res.status(200).json({
@@ -63,10 +86,15 @@ export const deleteVenue = catchAsyncErrors(async (req, res, next) => {
   const venue = await Venue.findById(req?.params?.id);
 
   if (!venue) {
-    throw next(new ErrorHandler("Venue not found", 404));
+    return next(new ErrorHandler("Venue not found", 404));
   }
 
-  await venue.deleteOne(); 
+  await venue.deleteOne();
+
+  // Clear the cache
+  redisClient.del("venues", (err) => {
+    if (err) console.error("Cache clear error: ", err);
+  });
 
   res.status(200).json({
     message: "Venue Deleted",
