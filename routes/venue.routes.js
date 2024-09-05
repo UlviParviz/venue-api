@@ -13,11 +13,17 @@ import {
 } from "../validations/venue.validation.js";
 const router = express.Router();
 
-router.route("/venues").get(getVenues);
+router.route("/venues").get(isAuthenticatedUser, getVenues);
 router
   .route("/venues")
-  .post(isAuthenticatedUser, validateVenue, checkVenueValidation, newVenue);
-router.route("/venues/:id").get(getSingleVenue);
+  .post(
+    isAuthenticatedUser,
+    authorizeRoles("admin"),
+    validateVenue,
+    checkVenueValidation,
+    newVenue
+  );
+router.route("/venues/:id").get(isAuthenticatedUser, getSingleVenue);
 router
   .route("/venues/:id")
   .put(isAuthenticatedUser, authorizeRoles("admin"), updateVenue);

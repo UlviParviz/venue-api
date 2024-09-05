@@ -2,32 +2,30 @@ import catchAsyncErrors from "../middlewares/catchAsyncErrors.js";
 import APIFilters from "../utils/filters.js";
 import Venue from "../models/venue.model.js";
 import ErrorHandler from "../utils/errorHandler.js";
-import redisClient from "../utils/redisClient.js";
+import { getCache, setCache, deleteCache } from "../utils/cache.js";
 
 // Get Venues   =>  /api/venues
 export const getVenues = catchAsyncErrors(async (req, res) => {
   const cacheKey = "venues";
-  redisClient.get(cacheKey, async (err, cachedData) => {
-    if (err) return res.status(500).json({ message: "Cache error" });
+  const cachedData = getCache(cacheKey);
 
-    if (cachedData) {
-      return res.status(200).json(JSON.parse(cachedData));
-    }
+  if (cachedData) {
+    return res.status(200).json(cachedData);
+  }
 
-    const apiFilters = new APIFilters(Venue, req.query).search().filters();
-    let venues = await apiFilters.query;
+  const apiFilters = new APIFilters(Venue, req.query).search().filters();
+  let venues = await apiFilters.query;
 
-    apiFilters.pagination();
-    venues = await apiFilters.query.clone();
+  apiFilters.pagination();
+  venues = await apiFilters.query.clone();
 
-    const response = {
-      venues,
-    };
+  const response = {
+    venues,
+  };
 
-    redisClient.setEx(cacheKey, 3600, JSON.stringify(response));
+  setCache(cacheKey, response, 3600);
 
-    res.status(200).json(response);
-  });
+  res.status(200).json(response);
 });
 
 // Create new venue --ADMIN  =>  /api/venues
@@ -37,9 +35,7 @@ export const newVenue = catchAsyncErrors(async (req, res) => {
   const venue = await Venue.create(req.body);
 
   // Clear the cache
-  redisClient.del("venues", (err) => {
-    if (err) console.error("Cache clear error: ", err);
-  });
+  deleteCache("venues");
 
   res.status(200).json({
     venue,
@@ -72,9 +68,7 @@ export const updateVenue = catchAsyncErrors(async (req, res, next) => {
   });
 
   // Clear the cache
-  redisClient.del("venues", (err) => {
-    if (err) console.error("Cache clear error: ", err);
-  });
+  deleteCache("venues");
 
   res.status(200).json({
     venue,
@@ -92,9 +86,7 @@ export const deleteVenue = catchAsyncErrors(async (req, res, next) => {
   await venue.deleteOne();
 
   // Clear the cache
-  redisClient.del("venues", (err) => {
-    if (err) console.error("Cache clear error: ", err);
-  });
+  deleteCache("venues");
 
   res.status(200).json({
     message: "Venue Deleted",

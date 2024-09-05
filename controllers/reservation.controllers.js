@@ -4,7 +4,7 @@ import catchAsyncErrors from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { getCreateReservationTemplate } from "../utils/emailTemplate.js";
 import sendEmail from "../utils/sendEmail.js";
-import redisClient from "../utils/redisClient.js";
+import { getCache, setCache, deleteCache } from "../utils/cache.js";
 
 // Create a new reservation =>  /api/reservations  POST
 export const createReservation = catchAsyncErrors(async (req, res, next) => {
@@ -51,9 +51,7 @@ export const createReservation = catchAsyncErrors(async (req, res, next) => {
   });
 
   // Clear relevant cache
-  redisClient.del(`reservations:${userId}`, (err) => {
-    if (err) console.error("Cache clear error: ", err);
-  });
+  deleteCache(`reservations:${userId}`);
 
   res.status(201).json(newReservation);
 });
@@ -63,23 +61,21 @@ export const getUserReservations = catchAsyncErrors(async (req, res, next) => {
   const userId = req.user._id;
   const cacheKey = `reservations:${userId}`;
 
-  redisClient.get(cacheKey, async (err, cachedData) => {
-    if (err) return res.status(500).json({ message: "Cache error" });
+  const cachedData = getCache(cacheKey);
 
-    if (cachedData) {
-      return res.status(200).json(JSON.parse(cachedData));
-    }
+  if (cachedData) {
+    return res.status(200).json(cachedData);
+  }
 
-    const reservations = await Reservation.find({ userId });
+  const reservations = await Reservation.find({ userId });
 
-    if (!reservations) {
-      return next(new ErrorHandler("No reservations found for this user", 404));
-    }
+  if (!reservations) {
+    return next(new ErrorHandler("No reservations found for this user", 404));
+  }
 
-    redisClient.setEx(cacheKey, 3600, JSON.stringify(reservations));
+  setCache(cacheKey, reservations, 3600);
 
-    res.status(200).json(reservations);
-  });
+  res.status(200).json(reservations);
 });
 
 // Get a reservation details by ID =>  /api/reservations/:id GET
@@ -120,9 +116,7 @@ export const cancelReservation = catchAsyncErrors(async (req, res, next) => {
   await reservation.deleteOne();
 
   // Clear relevant cache
-  redisClient.del(`reservations:${req.user._id}`, (err) => {
-    if (err) console.error("Cache clear error: ", err);
-  });
+  deleteCache(`reservations:${req.user._id}`);
 
   res.status(200).json({ message: "Reservation cancelled successfully" });
 });
