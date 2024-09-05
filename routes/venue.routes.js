@@ -12,7 +12,7 @@ const router = express.Router();
 router.route("/venues").get(getVenues);
 router
   .route("/venues")
-  .post(isAuthenticatedUser, authorizeRoles("admin"), newVenue);
+  .post(isAuthenticatedUser, newVenue);
 router.route("/venues/:id").get(getSingleVenue);
 router
   .route("/venues/:id")
