@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:auth": "mocha __tests__/auth.test.js",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
@@ -25,6 +25,9 @@
     "redis": "^4.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "chai": "^5.1.1",
+    "mocha": "^10.7.3",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
   }
 }
