@@ -1,13 +1,30 @@
 import request from "supertest";
+import { expect } from "chai";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 import app from "../index.js"; 
-import { expect } from "chai"; 
 import User from "../models/user.model.js";
+
+dotenv.config(); 
+
+const MONGO_URL = process.env.DB_URL_TEST;
 
 describe("User Authentication", function () {
   this.timeout(10000); 
 
   beforeEach(async () => {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(MONGO_URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+    }
     await User.deleteMany({});
+  });
+
+  after(async () => {
+    await User.deleteMany({});
+    await mongoose.connection.close();
   });
 
   describe("POST /api/auth/register", () => {

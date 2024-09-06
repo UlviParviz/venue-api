@@ -6,6 +6,7 @@
   "scripts": {
     "test:auth": "mocha __tests__/auth.test.js",
     "test:venue": "mocha __tests__/venue.test.js",
+    "test:reservation": "mocha __tests__/reservation.test.js",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },

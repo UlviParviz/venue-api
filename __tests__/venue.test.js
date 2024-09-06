@@ -1,8 +1,15 @@
 import request from "supertest";
 import { expect } from "chai";
-import app from "../index.js"; 
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import app from "../index.js";
 import User from "../models/user.model.js";
 import Venue from "../models/venue.model.js";
+
+dotenv.config(); 
+
+// MongoDB bağlantı URI
+const MONGO_URL = process.env.DB_URL_TEST;
 
 const userCredentials = {
   username: "admin",
@@ -15,13 +22,20 @@ let token;
 let venueId;
 
 describe("Venue API", function () {
-  this.timeout(10000); 
+  this.timeout(10000);
 
   before(async () => {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(MONGO_URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+    }
+
     await User.deleteMany({});
     const user = await User.create(userCredentials);
 
-    token = user.generateToken(); 
+    token = user.generateToken();
 
     await Venue.deleteMany({});
     const venue = await Venue.create({
@@ -61,7 +75,6 @@ describe("Venue API", function () {
       expect(response.body).to.have.property("venue");
       expect(response.body.venue).to.have.property("name", "New Venue");
     });
-
   });
 
   describe("GET /api/venues/:id", () => {
@@ -74,7 +87,6 @@ describe("Venue API", function () {
       expect(response.body).to.have.property("venue");
       expect(response.body.venue).to.have.property("_id", venueId.toString());
     });
-
   });
 
   describe("PUT /api/venues/:id", () => {
@@ -84,14 +96,13 @@ describe("Venue API", function () {
         .set("Authorization", `Bearer ${token}`)
         .send({
           name: "Updated Venue",
-          location: "Updated Location", 
+          location: "Updated Location",
         })
         .expect(200);
 
       expect(response.body).to.have.property("venue");
       expect(response.body.venue).to.have.property("name", "Updated Venue");
     });
-
   });
 
   describe("DELETE /api/venues/:id", () => {
@@ -103,11 +114,11 @@ describe("Venue API", function () {
 
       expect(response.body).to.have.property("message", "Venue Deleted");
     });
-
   });
 
   after(async () => {
     await User.deleteMany({});
     await Venue.deleteMany({});
+    await mongoose.connection.close(); 
   });
 });
