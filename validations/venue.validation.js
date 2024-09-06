@@ -17,7 +17,7 @@ export const validateVenue = [
     .isString()
     .withMessage("Description should be a type of string")
     .notEmpty()
-    .withMessage("Please enter product description"),
+    .withMessage("Please enter venue description"),
   body("location")
     .isString()
     .withMessage("Venue location should be a type of string")

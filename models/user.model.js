@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please enter your password"],
       minlength: [8, "Password must be longer than 6 characters"],
-      select: false, 
+      select: false,
     },
     role: {
       type: String,
@@ -46,6 +46,13 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.getJwtToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_TIME,
+  });
+};
+
+// Generate JWT Token for refreshing JWT
+userSchema.methods.generateToken = function () {
+  return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
   });
 };
 

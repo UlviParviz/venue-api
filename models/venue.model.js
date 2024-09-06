@@ -14,7 +14,7 @@ const venueSchema = new Schema({
   },
   description: {
     type: String,
-    required: [true, "Please enter product description"],
+    required: [true, "Please enter description"],
   },
   location: {
     type: String,
