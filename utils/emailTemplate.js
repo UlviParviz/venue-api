@@ -17,7 +17,6 @@ export const getCreateReservationTemplate = (
         margin: 0;
         -webkit-text-size-adjust: none;
       }
-
       a {
         color: #3869d4;
       }
