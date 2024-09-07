@@ -154,5 +154,3 @@ In your `package.json`, you'll find the following scripts configured for testing
     "test:reservation": "mocha __tests__/reservation.test.js",
 }
 ```
-
-These scripts run tests located in the respective directories under `tests/`.
