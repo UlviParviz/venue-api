@@ -21,6 +21,10 @@ app.use(cookieParser());
 // Database connection
 connectDatabase();
 
+app.listen(process.env.PORT, () => {
+  console.log(`Server started on PORT: ${process.env.PORT}.`);
+});
+
 // Routes setup
 app.get("/", (req, res) => {
   res.send("Hello This is Venue Reservation API");
