@@ -8,7 +8,7 @@ import Venue from "../models/venue.model.js";
 
 dotenv.config(); 
 
-// MongoDB bağlantı URI
+// MongoDB Test Configuration
 const MONGO_URL = process.env.DB_URL_TEST;
 
 const userCredentials = {
@@ -32,14 +32,15 @@ describe("Venue API", function () {
       });
     }
 
-    await User.deleteMany({});
-    const user = await User.create(userCredentials);
+    await User.findOneAndDelete({ email: userCredentials.email });
 
+    const user = await User.create(userCredentials);
     token = user.generateToken();
 
-    await Venue.deleteMany({});
+    await Venue.deleteMany({ name: "Test Venue ABC", createdBy: user._id });
+
     const venue = await Venue.create({
-      name: "Test Venue",
+      name: "Test Venue ABC",
       location: "Test Location",
       description: "Test description",
       capacity: 100,
@@ -60,8 +61,8 @@ describe("Venue API", function () {
   });
 
   describe("POST /api/venues", () => {
-    it("should create a new venue", async () => {
-      const response = await request(app)
+    it("should create a new venue and then delete it", async () => {
+      const createResponse = await request(app)
         .post("/api/venues")
         .set("Authorization", `Bearer ${token}`)
         .send({
@@ -72,8 +73,17 @@ describe("Venue API", function () {
         })
         .expect(200);
 
-      expect(response.body).to.have.property("venue");
-      expect(response.body.venue).to.have.property("name", "New Venue");
+      expect(createResponse.body).to.have.property("venue");
+      expect(createResponse.body.venue).to.have.property("name", "New Venue");
+
+      const newVenueId = createResponse.body.venue._id;
+
+      const deleteResponse = await request(app)
+        .delete(`/api/venues/${newVenueId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(deleteResponse.body).to.have.property("message", "Venue Deleted");
     });
   });
 
@@ -117,8 +127,12 @@ describe("Venue API", function () {
   });
 
   after(async () => {
-    await User.deleteMany({});
-    await Venue.deleteMany({});
+    await User.findOneAndDelete({ email: userCredentials.email });
+
+    if (venueId) {
+      await Venue.findByIdAndDelete(venueId);
+    }
+
     await mongoose.connection.close(); 
   });
 });

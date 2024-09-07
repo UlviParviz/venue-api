@@ -6,26 +6,16 @@ import { getCache, setCache, deleteCache } from "../utils/cache.js";
 
 // Get Venues   =>  /api/venues
 export const getVenues = catchAsyncErrors(async (req, res) => {
-  const cacheKey = "venues";
-  const cachedData = getCache(cacheKey);
-
-  if (cachedData) {
-    return res.status(200).json(cachedData);
-  }
-
   const apiFilters = new APIFilters(Venue, req.query).search().filters();
+
   let venues = await apiFilters.query;
 
   apiFilters.pagination();
   venues = await apiFilters.query.clone();
 
-  const response = {
+  res.status(200).json({
     venues,
-  };
-
-  setCache(cacheKey, response, 3600);
-
-  res.status(200).json(response);
+  });
 });
 
 // Create new venue --ADMIN  =>  /api/venues

@@ -3,13 +3,15 @@ import request from "supertest";
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
 import jwt from "jsonwebtoken";
-import app from "../index.js "; 
+import app from "../index.js";
 import User from "../models/user.model.js";
 import Reservation from "../models/reservation.model.js";
 import Venue from "../models/venue.model.js";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// MongoDB Test Configuration
 const MONGO_URL = process.env.DB_URL_TEST;
 
 before(async function () {
@@ -26,7 +28,15 @@ before(async function () {
 after(async function () {
   this.timeout(10000); 
 
-  await mongoose.connection.dropDatabase();
+  await Reservation.deleteMany({
+    date: "2024-09-30",
+    time: "18:00",
+  });
+
+  await User.deleteMany({ email: { $in: ["test@exampleabc.com", "other@exampleabc.com"] } });
+
+  await Venue.deleteMany({ name: { $in: ["Test Venue abc"] } });
+
   await mongoose.connection.close();
 });
 
@@ -38,12 +48,12 @@ describe("Reservation API", function () {
 
     user = await User.create({
       username: "testuser",
-      email: "test@example.com",
+      email: "test@exampleabc.com",
       password: "password",
     });
 
     venue = await Venue.create({
-      name: "Test Venue",
+      name: "Test Venue abc",
       location: "Test Location",
       description: "Test Description",
       capacity: 100,
@@ -135,7 +145,7 @@ describe("Reservation API", function () {
 
       const otherUser = await User.create({
         username: "otheruser",
-        email: "other@example.com",
+        email: "other@exampleabc.com",
         password: "password",
       });
 

@@ -6,6 +6,7 @@ import errorMiddleware from "./middlewares/errors.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+app.use(express.json());
 // Handle Uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.log(`ERROR: ${err}`);
@@ -18,7 +19,6 @@ dotenv.config({ path: "config/.env" });
 // Connecting to database
 connectDatabase();
 
-app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 

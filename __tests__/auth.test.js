@@ -2,15 +2,18 @@ import request from "supertest";
 import { expect } from "chai";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import app from "../index.js"; 
+import app from "../index.js";
 import User from "../models/user.model.js";
 
-dotenv.config(); 
+dotenv.config();
 
+// MongoDB Test Configuration
 const MONGO_URL = process.env.DB_URL_TEST;
 
 describe("User Authentication", function () {
-  this.timeout(10000); 
+  this.timeout(10000);
+
+  let userEmail;
 
   beforeEach(async () => {
     if (mongoose.connection.readyState === 0) {
@@ -19,11 +22,16 @@ describe("User Authentication", function () {
         useUnifiedTopology: true,
       });
     }
-    await User.deleteMany({});
+  });
+
+  afterEach(async () => {
+    if (userEmail) {
+      await User.findOneAndDelete({ email: userEmail });
+      userEmail = null;
+    }
   });
 
   after(async () => {
-    await User.deleteMany({});
     await mongoose.connection.close();
   });
 
@@ -31,12 +39,17 @@ describe("User Authentication", function () {
     it("should register a user and return a token", async () => {
       const response = await request(app).post("/api/auth/register").send({
         username: "testuser",
-        email: "testuser@example.com",
+        email: "testuser@exampleabc.com",
         password: "password123",
       });
 
-      expect(response.status).to.equal(201); 
+      expect(response.status).to.equal(201);
       expect(response.body).to.have.property("token");
+
+      userEmail =
+        response.body.user?.email ||
+        response.body.email ||
+        "testuser@exampleabc.com";
     });
 
     it("should not register a user with missing fields", async () => {
@@ -46,25 +59,27 @@ describe("User Authentication", function () {
       });
 
       expect(response.status).to.equal(400);
-      expect(response.body.message).to.be.an("array"); 
+      expect(response.body.message).to.be.an("array");
       expect(response.body.message[0]).to.equal(
         "Email should be a type of string"
-      ); 
+      );
     });
   });
 
   describe("POST /api/auth/login", () => {
     beforeEach(async () => {
-      await User.create({
+      const user = await User.create({
         username: "testuser",
-        email: "testuser@example.com",
+        email: "testuser@exampleabc.com",
         password: "password123",
       });
+
+      userEmail = user.email;
     });
 
     it("should login a user and return a token", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        email: "testuser@example.com",
+        email: "testuser@exampleabc.com",
         password: "password123",
       });
 
@@ -74,7 +89,7 @@ describe("User Authentication", function () {
 
     it("should not login with incorrect password", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        email: "testuser@example.com",
+        email: "testuser@exampleabc.com",
         password: "wrongpassword",
       });
 
@@ -87,7 +102,7 @@ describe("User Authentication", function () {
 
     it("should not login with non-existing email", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        email: "nonexistent@example.com",
+        email: "nonexistent@exampleabc.com",
         password: "password123",
       });
 

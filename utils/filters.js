@@ -35,7 +35,7 @@ class APIFilters {
   }
 
   pagination() {
-    const resPerPage = Number(this.queryStr.limit); 
+    const resPerPage = Number(this.queryStr.limit);
     const currentPage = Number(this.queryStr.page) || 1;
     const skip = resPerPage * (currentPage - 1);
 
