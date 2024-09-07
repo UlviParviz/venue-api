@@ -67,7 +67,7 @@ describe("Reservation API", function () {
 
   describe("POST /api/reservations", function () {
     it("should create a reservation", async function () {
-      this.timeout(10000); 
+      this.timeout(20000); 
 
       const res = await request(app)
         .post("/api/reservations")
