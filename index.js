@@ -1,55 +1,39 @@
 import express from "express";
-const app = express();
 import dotenv from "dotenv";
 import { connectDatabase } from "./config/db.connect.js";
 import errorMiddleware from "./middlewares/errors.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
-app.use(express.json());
-
-app.get("/", (req, res) => {
-  res.send("Hello This is Venue Reservation API");
-});
-
-// Handle Uncaught exceptions
-process.on("uncaughtException", (err) => {
-  console.log(`ERROR: ${err}`);
-  console.log("Shutting down due to uncaught expection");
-  process.exit(1);
-});
-
-dotenv.config({ path: "config/.env" });
-
-// Connecting to database
-connectDatabase();
-
-app.use(cors());
-app.use(cookieParser());
-
-// Import all routes
 import venueRoutes from "./routes/venue.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
+
+dotenv.config({ path: "config/.env" });
+
+// Create an instance of Express
+const app = express();
+
+// Middleware setup
+app.use(express.json());
+app.use(cors());
+app.use(cookieParser());
+
+// Database connection
+connectDatabase();
+
+// Routes setup
+app.get("/", (req, res) => {
+  res.send("Hello This is Venue Reservation API");
+});
 
 app.use("/api", venueRoutes);
 app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);
 
-// Using error middleware
+// Error handling middleware
 app.use(errorMiddleware);
 
-const server = app.listen(process.env.PORT, () => {
-  console.log(`Server started on PORT: ${process.env.PORT}.`);
-});
-
-//Handle Unhandled Promise rejections
-process.on("unhandledRejection", (err) => {
-  console.log(`ERROR: ${err}`);
-  console.log("Shutting down server due to Unhandled Promise Rejection");
-  server.close(() => {
-    process.exit(1);
-  });
-});
-
-export default app;
+// Export the app as a handler for Vercel
+export default (req, res) => {
+  return app(req, res);
+};
