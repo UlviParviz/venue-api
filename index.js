@@ -7,6 +7,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("Hello This is Venue Reservation API");
+});
+
 // Handle Uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.log(`ERROR: ${err}`);
@@ -47,4 +52,4 @@ process.on("unhandledRejection", (err) => {
   });
 });
 
-export default app
+export default app;
